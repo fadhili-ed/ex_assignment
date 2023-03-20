@@ -45,10 +45,18 @@ defmodule ExAssignment.Todos do
   ASSIGNMENT: ...
   """
   def get_recommended() do
-    list_todos(:open)
+    # check genserver
+    ExAssignment.PersistRecomendations.check()
+    |> List.keyfind(:todo, 0)
     |> case do
-      [] -> nil
-      todos -> Enum.take_random(todos, 1) |> List.first()
+      {_key, value} ->
+        value
+
+      nil ->
+        add_todo_to_genserver()
+
+        {_key, value} = ExAssignment.PersistRecomendations.check() |> List.first()
+        value
     end
   end
 
@@ -147,6 +155,9 @@ defmodule ExAssignment.Todos do
       from(t in Todo, where: t.id == ^id, update: [set: [done: true]])
       |> Repo.update_all([])
 
+    ExAssignment.PersistRecomendations.remove(Todo)
+    add_todo_to_genserver()
+
     :ok
   end
 
@@ -165,5 +176,12 @@ defmodule ExAssignment.Todos do
       |> Repo.update_all([])
 
     :ok
+  end
+
+  defp add_todo_to_genserver do
+    list_todos(:open)
+    |> Enum.take_random(1)
+    |> List.first()
+    |> ExAssignment.PersistRecomendations.add()
   end
 end
