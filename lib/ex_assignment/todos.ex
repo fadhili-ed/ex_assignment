@@ -178,10 +178,16 @@ defmodule ExAssignment.Todos do
     :ok
   end
 
+  def recommend_with_priority() do
+    [todo | _] =
+      list_todos(:open)
+      |> Enum.chunk_every(2)
+
+    todo |> Enum.take_random(1) |> List.first()
+  end
+
   defp add_todo_to_genserver do
-    list_todos(:open)
-    |> Enum.take_random(1)
-    |> List.first()
+    recommend_with_priority()
     |> ExAssignment.PersistRecomendations.add()
   end
 end
