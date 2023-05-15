@@ -26,7 +26,7 @@ defmodule ExAssignment.Todos do
   def list_todos(type \\ nil) do
     cond do
       type == :open ->
-        from(t in Todo, where: not t.done, order_by: t.priority)
+        from(t in Todo, where: not t.done)
         |> Repo.all()
 
       type == :done ->
@@ -175,15 +175,17 @@ defmodule ExAssignment.Todos do
       from(t in Todo, where: t.id == ^id, update: [set: [done: false]])
       |> Repo.update_all([])
 
+    ExAssignment.PersistRecomendations.remove(Todo)
+    add_todo_to_genserver()
+
     :ok
   end
 
   def recommend_with_priority() do
-    [todo | _] =
-      list_todos(:open)
-      |> Enum.chunk_every(2)
-
-    todo |> Enum.take_random(1) |> List.first()
+    :open
+      |> list_todos()
+      |> Enum.sort_by(&(&1.priority))
+      |> List.first()
   end
 
   defp add_todo_to_genserver do
